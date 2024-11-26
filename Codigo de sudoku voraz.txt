@@ -1,0 +1,124 @@
+import time
+import matplotlib.pyplot as plt
+import numpy as np
+
+class SudokuSolver:
+    def __init__(self, board, time_limit=600, delay=0.05):
+        """
+        :param board: Tablero de Sudoku.
+        :param time_limit: Límite de tiempo en segundos.
+        :param delay: Retardo artificial en segundos por cada intento de número.
+        """
+        self.board = board
+        self.time_limit = time_limit
+        self.start_time = None
+        self.solution_count = 0
+        self.delay = delay  # Retardo artificial para aumentar el tiempo de ejecución
+    
+    def is_valid(self, row, col, num):
+        """Verifica si un número puede colocarse en una celda específica."""
+        for i in range(9):
+            if self.board[row][i] == num or self.board[i][col] == num:
+                return False
+        
+        box_row_start = (row // 3) * 3
+        box_col_start = (col // 3) * 3
+        for i in range(3):
+            for j in range(3):
+                if self.board[box_row_start + i][box_col_start + j] == num:
+                    return False
+        
+        return True
+
+    def find_empty_cell(self):
+        """Encuentra una celda vacía en el tablero."""
+        for row in range(9):
+            for col in range(9):
+                if self.board[row][col] == 0:
+                    return row, col
+        return None
+
+    def solve(self):
+        """Resuelve el Sudoku utilizando backtracking con retardos y control de tiempo."""
+        if time.time() - self.start_time > self.time_limit:
+            return False  # Detener si se supera el límite de tiempo
+
+        empty_cell = self.find_empty_cell()
+        if not empty_cell:
+            self.solution_count += 1  # Solución encontrada
+            return True
+        
+        row, col = empty_cell
+
+        for num in range(1, 10):
+            if self.is_valid(row, col, num):
+                self.board[row][col] = num
+                time.sleep(self.delay)  # Introducir retardo artificial
+                if self.solve():
+                    return True
+                self.board[row][col] = 0
+
+        return False
+
+    def run(self):
+        """Inicia la solución del Sudoku y mide el tiempo."""
+        self.start_time = time.time()
+        self.solve()
+        elapsed_time = time.time() - self.start_time
+        return elapsed_time, self.solution_count
+
+    def print_board(self):
+        """Imprime el tablero de Sudoku."""
+        for row in self.board:
+            print(" ".join(str(num) if num != 0 else '.' for num in row))
+
+    def plot_board(self):
+        """Genera una imagen del tablero resuelto."""
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.matshow(np.ones((9, 9)), cmap="Blues", alpha=0.1)  # Fondo
+        for i in range(9):
+            for j in range(9):
+                value = self.board[i][j]
+                if value != 0:
+                    ax.text(j, i, str(value), va='center', ha='center', fontsize=16)
+        
+        # Líneas de la cuadrícula
+        for i in range(1, 9):
+            lw = 2 if i % 3 == 0 else 0.5
+            ax.axhline(i - 0.5, color='black', linewidth=lw)
+            ax.axvline(i - 0.5, color='black', linewidth=lw)
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlim(-0.5, 8.5)
+        ax.set_ylim(8.5, -0.5)
+        plt.title("Sudoku Resuelto", fontsize=20)
+        plt.show()
+
+
+# Tablero de Sudoku de ejemplo
+sudoku_board = [
+    [5, 3, 0, 0, 7, 0, 0, 0, 0],
+    [6, 0, 0, 1, 9, 5, 0, 0, 0],
+    [0, 9, 8, 0, 0, 0, 0, 6, 0],
+    [8, 0, 0, 0, 6, 0, 0, 0, 3],
+    [4, 0, 0, 8, 0, 3, 0, 0, 1],
+    [7, 0, 0, 0, 2, 0, 0, 0, 6],
+    [0, 6, 0, 0, 0, 0, 2, 8, 0],
+    [0, 0, 0, 4, 1, 9, 0, 0, 5],
+    [0, 0, 0, 0, 8, 0, 0, 7, 9]
+]
+
+# Crear una instancia del solucionador
+solver = SudokuSolver(sudoku_board, time_limit=600, delay=0.01)
+
+# Ejecutar la solución
+elapsed_time, solution_count = solver.run()
+
+print(f"Tiempo de ejecución: {elapsed_time:.2f} segundos")
+print(f"Soluciones encontradas: {solution_count}")
+print("Estado final del tablero:")
+solver.print_board()
+
+# Mostrar el tablero resuelto
+solver.plot_board()
